@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#131313"/>
+  <!-- Layer 3 (back) -->
+  <text x="256" y="340" font-family="Inter,system-ui,sans-serif" font-size="280" font-weight="800" text-anchor="middle" fill="#f97187" opacity="0.25" transform="translate(6,4)">x</text>
+  <!-- Layer 2 (mid) -->
+  <text x="256" y="340" font-family="Inter,system-ui,sans-serif" font-size="280" font-weight="800" text-anchor="middle" fill="#d0b067" opacity="0.5" transform="translate(3,2)">x</text>
+  <!-- Layer 1 (front) -->
+  <text x="256" y="340" font-family="Inter,system-ui,sans-serif" font-size="280" font-weight="800" text-anchor="middle" fill="#e5e7eb">x</text>
+  <!-- Dot -->
+  <circle cx="370" cy="185" r="22" fill="#d0b067"/>
+</svg>

@@ -1,8 +1,337 @@
 <!DOCTYPE html>
-<html>
-<body>
-<h1> header </h1>
-<p>hello, world</p>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#131313">
+  <meta name="description" content="x.GEN — AI dummy prompt builder for content creators">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="x.GEN">
 
+  <title>x.GEN</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- App Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== TOP BAR ===== -->
+    <header id="top-bar" role="banner">
+      <div class="topbar-left">
+        <div class="topbar-logo" aria-label="x.GEN">
+          <span class="logo-x">x</span><span class="logo-dot">.</span><span class="logo-gen">GEN</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="bridge-dot" id="bridge-dot" title="Venice Bridge connected" aria-label="Bridge connected"></div>
+        <button class="topbar-btn" id="btn-settings" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===== BRIDGE BANNER ===== -->
+    <div id="bridge-banner" role="alert" aria-live="polite">
+      <span>⚡ Venice bridge not detected.</span>
+      <button id="bridge-banner-install">Install →</button>
+      <button class="dismiss" id="bridge-banner-dismiss" aria-label="Dismiss">✕</button>
+    </div>
+
+    <!-- ===== PWA INSTALL BANNER ===== -->
+    <div id="pwa-install-banner" role="complementary">
+      <span>📱 Install x.GEN for quick access</span>
+      <button id="pwa-install-btn">Install</button>
+      <button id="pwa-install-dismiss" style="font-size: 14px; color: var(--text-tertiary); padding: 0 4px;">✕</button>
+    </div>
+
+    <!-- ===== PAGE CONTAINER ===== -->
+    <main id="page-container" role="main">
+
+      <!-- === PAGE: HOME === -->
+      <section class="page" id="page-home" aria-label="Home">
+        <div class="page-header">
+          <h1 class="page-title">Your Dummies</h1>
+          <p class="page-subtitle">Select a preset or start from scratch</p>
+        </div>
+
+        <!-- Default Dummies Section -->
+        <div class="section-header">
+          <span class="section-title">Default Dummies</span>
+        </div>
+        <div class="preset-grid" id="grid-defaults" role="list" aria-label="Default Dummies">
+          <!-- Injected by js/pages/home.js -->
+        </div>
+
+        <!-- My Dummies Section -->
+        <div class="section-header">
+          <span class="section-title">My Dummies</span>
+          <button class="section-action" id="btn-new-dummy" aria-label="Create new dummy">+ New</button>
+        </div>
+        <div class="preset-grid" id="grid-dummies" role="list" aria-label="My Dummies">
+          <!-- Injected by js/pages/home.js -->
+        </div>
+      </section>
+
+      <!-- === PAGE: CREATION KIT === -->
+      <section class="page" id="page-creation-kit" aria-label="Creation Kit">
+        <!-- Dummy Tabs (shown when 2+ dummies) -->
+        <div class="dummy-tabs" id="dummy-tabs" style="display: none;" role="tablist" aria-label="Dummy tabs">
+          <button class="dummy-tab active" id="tab-dummy-0" role="tab" aria-selected="true">Dummy 1</button>
+          <button class="dummy-tab-add" id="btn-add-dummy" aria-label="Add dummy">+ Add</button>
+        </div>
+
+        <!-- Module Prompter -->
+        <div id="module-prompter" class="collapsed" role="region" aria-label="Prompt Preview">
+          <div class="prompter-header" id="prompter-toggle" role="button" aria-expanded="false" aria-controls="prompter-body" tabindex="0">
+            <div class="prompter-strength">
+              <span class="prompter-strength-label" id="prompter-label">0 / 0 fields</span>
+              <div class="prompter-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="prompter-bar-fill" id="prompter-bar-fill" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="prompter-toggle" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+          <div class="prompter-body" id="prompter-body" aria-live="polite">
+            <div class="prompter-section">
+              <div class="prompter-label">Positive</div>
+              <div class="prompter-text prompter-positive" id="prompter-positive">—</div>
+            </div>
+            <div class="prompter-section">
+              <div class="prompter-label">Negative</div>
+              <div class="prompter-text prompter-negative" id="prompter-negative">—</div>
+            </div>
+            <div class="prompter-meta" id="prompter-meta">0 words · 0 tokens</div>
+          </div>
+        </div>
+
+        <!-- Category Navbar -->
+        <nav id="category-navbar" aria-label="Form categories" role="navigation">
+          <!-- Injected by js/pages/creationKit.js -->
+        </nav>
+
+        <!-- Category Window -->
+        <div id="category-window" role="tabpanel">
+          <!-- Injected by js/pages/creationKit.js -->
+        </div>
+      </section>
+
+      <!-- === PAGE: THE LAB === -->
+      <section class="page" id="page-the-lab" aria-label="The Lab">
+        <!-- Empty State -->
+        <div id="lab-empty" class="empty-state">
+          <div class="empty-state-icon">🧪</div>
+          <div class="empty-state-title">The Lab</div>
+          <div class="empty-state-desc">Generate your first image. Configure a dummy and press Generate.</div>
+          <button class="btn btn-primary btn-lg" id="lab-goto-kit">Open Creation Kit</button>
+        </div>
+
+        <!-- Lab Content (hidden until images exist) -->
+        <div id="lab-content" style="display: none;">
+          <!-- Image Viewer -->
+          <div class="lab-viewer" id="lab-viewer" role="img" aria-label="Generated image">
+            <img id="lab-image" src="" alt="Generated image" draggable="false">
+            <div class="lab-viewer-controls" id="lab-controls">
+              <button class="lab-nav-btn" id="lab-prev" aria-label="Previous image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <span class="lab-counter" id="lab-counter">1 / 1</span>
+              <button class="lab-nav-btn" id="lab-next" aria-label="Next image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+              <button class="lab-action-btn" id="lab-download" aria-label="Download">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </button>
+              <button class="lab-action-btn" id="lab-copy" aria-label="Copy image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              </button>
+              <button class="lab-action-btn" id="lab-fullscreen" aria-label="Fullscreen">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+              </button>
+              <button class="lab-action-btn" id="lab-copy-prompt" aria-label="Copy prompt">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Image Metadata -->
+          <div style="padding: var(--space-3) var(--space-4);">
+            <div id="lab-meta" style="font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: var(--space-3);"></div>
+          </div>
+
+          <!-- History Strip -->
+          <div class="lab-history" id="lab-history" role="list" aria-label="Image history">
+            <!-- Injected by js/pages/theLab.js -->
+          </div>
+
+          <!-- Prompt Display -->
+          <div class="right-panel-card" style="margin: var(--space-4);">
+            <div class="right-panel-card-header">
+              <span>Positive Prompt</span>
+              <button class="btn btn-ghost btn-sm" id="lab-copy-prompt-btn">Copy</button>
+            </div>
+            <div class="right-panel-card-body">
+              <div class="right-panel-prompt" id="lab-prompt-display">—</div>
+            </div>
+          </div>
+
+          <!-- Bridge Status Panel -->
+          <div style="padding: 0 var(--space-4) var(--space-6);">
+            <div id="lab-status-panel" style="display: flex; align-items: center; gap: var(--space-3);">
+              <div class="bridge-dot" id="lab-bridge-dot"></div>
+              <span id="lab-status-text" style="font-size: var(--text-sm); color: var(--text-tertiary);">Ready</span>
+              <button class="btn btn-primary" id="lab-generate-btn" style="margin-left: auto;">Generate</button>
+            </div>
+            <div id="lab-error-banner" class="warning-banner" style="display: none; margin-top: var(--space-3);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span id="lab-error-text"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===== BOTTOM NAVBAR ===== -->
+    <nav id="bottom-navbar" role="navigation" aria-label="Main navigation">
+      <button class="nav-item active" id="nav-home" role="menuitem" aria-current="page" aria-label="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span>Home</span>
+      </button>
+      <button class="nav-item" id="nav-creation-kit" role="menuitem" aria-label="Creation Kit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"></path>
+        </svg>
+        <span>Kit</span>
+      </button>
+      <button class="nav-item" id="nav-the-lab" role="menuitem" aria-label="The Lab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"></path>
+        </svg>
+        <span>Lab</span>
+      </button>
+    </nav>
+
+    <!-- ===== FAB ===== -->
+    <div class="fab-container" id="fab-container" aria-label="Quick actions">
+      <div class="fab-backdrop" id="fab-backdrop" aria-hidden="true"></div>
+      <div class="fab-actions" id="fab-actions" role="menu" aria-label="Actions">
+        <button class="fab-action" id="fab-duplicate" role="menuitem" aria-label="Copy prompt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy Prompt
+        </button>
+        <button class="fab-action" id="fab-randomize" role="menuitem" aria-label="Randomize fields">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+          Randomize
+        </button>
+        <button class="fab-action" id="fab-reset" role="menuitem" aria-label="Reset all fields">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.5"></path></svg>
+          Reset All
+        </button>
+      </div>
+      <button class="fab-main" id="fab-main" aria-label="Toggle actions" aria-expanded="false" aria-controls="fab-actions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- ===== TOAST CONTAINER ===== -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ===== LOADING OVERLAY ===== -->
+    <div id="loading-overlay" role="dialog" aria-modal="true" aria-label="Generating image">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <div class="loading-text" id="loading-text">Connecting to Venice</div>
+      <div class="loading-sub" id="loading-sub">Keep Venice.ai open in a tab</div>
+      <div class="loading-countdown" id="loading-countdown" aria-live="polite">2:00</div>
+      <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+    </div>
+
+    <!-- ===== FULLSCREEN VIEWER ===== -->
+    <div id="fullscreen-viewer" role="dialog" aria-modal="true" aria-label="Image fullscreen" tabindex="0">
+      <img id="fullscreen-image" src="" alt="Fullscreen image">
+    </div>
+
+    <!-- ===== MODAL CONTAINER ===== -->
+    <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal" id="modal" role="document">
+        <div class="modal-header">
+          <span class="modal-title" id="modal-title">Modal</span>
+          <button class="modal-close" id="modal-close" aria-label="Close modal">✕</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-footer" id="modal-footer"></div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS PANEL ===== -->
+    <div class="settings-panel" id="settings-panel" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="settings-backdrop" id="settings-backdrop"></div>
+      <div class="settings-sheet">
+        <div class="settings-header">
+          <span class="settings-title">Settings</span>
+          <button class="modal-close" id="settings-close" aria-label="Close settings">✕</button>
+        </div>
+        <div class="settings-body" id="settings-body">
+          <!-- Injected by js/components/settings.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ONBOARDING ===== -->
+    <div id="onboarding-screen" role="dialog" aria-modal="true" aria-label="Onboarding">
+      <div class="onboarding-content">
+        <div class="onboarding-illustration" id="onboarding-icon" aria-hidden="true">✦</div>
+        <div class="onboarding-title" id="onboarding-title">Welcome</div>
+        <div class="onboarding-subtitle" id="onboarding-subtitle">Getting started with x.GEN</div>
+        <div class="onboarding-steps" id="onboarding-dots">
+          <span class="onboarding-dot active"></span>
+          <span class="onboarding-dot"></span>
+          <span class="onboarding-dot"></span>
+        </div>
+      </div>
+      <div class="onboarding-footer">
+        <button class="btn btn-primary btn-full btn-lg" id="onboarding-next">Next</button>
+        <button class="onboarding-skip" id="onboarding-skip">Skip</button>
+      </div>
+    </div>
+
+  </div><!-- #app -->
+
+  <!-- App Scripts (deferred) -->
+  <script type="module" src="js/app.js"></script>
+
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
