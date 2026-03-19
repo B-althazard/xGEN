@@ -45,3 +45,22 @@
 - **Fix:** Changed `-webkit-text-size-adjust: 100%` to `auto`; other warnings are harmless browser quirks
 - **Files affected:** `css/style.css`
 - **Reported by:** GitHub Pages deployment console
+
+### [FIXED] Settings Theme Button Stacked + Non-functional
+
+- **Severity:** Medium
+- **Symptom:** Settings > Theme shows "dark light" stacked and button has no effect
+- **Root Cause:** Theme dropdown used `<button class="dropdown">` with `<option>` children — buttons don't render options; only `<select>` does
+- **Fix:** Changed `<button>` to `<select>` in `renderSettings()`
+- **Files affected:** `js/components/settings.js`
+- **Reported by:** xGEN bug report
+
+### [FIXED] GitHub Pages Cache — Module Errors Persist
+
+- **Severity:** Critical
+- **Symptom:** `app` export and `renderLab` duplicate export errors still appearing after push
+- **Root Cause:** GitHub Pages HTTP cache serving stale JS files even after push
+- **Fix:** Added `?v=1.0.1` cache-busting query param to `index.html` script tag, service worker registration, and SW precache list. Bumped SW cache name to `xgen-v2` to force full asset refresh
+- **Files affected:** `index.html`, `sw.js`
+- **Additional fix:** Added `export { app }` named export alongside `export default app` in `app.js` to satisfy all `import { app }` consumers
+- **Reported by:** xGEN bug report

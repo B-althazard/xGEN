@@ -283,5 +283,6 @@ const app = {
 };
 
 export default app;
+export { app };
 
 document.addEventListener('DOMContentLoaded', () => app.init());

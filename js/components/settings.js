@@ -34,10 +34,10 @@ function renderSettings(body) {
           <div class="settings-row-label">Theme</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="dropdown" id="setting-theme" style="min-width:100px;">
+          <select class="dropdown" id="setting-theme" style="min-width:100px;">
             <option value="dark" ${settings.theme === 'dark' ? 'selected' : ''}>Dark</option>
             <option value="light" ${settings.theme === 'light' ? 'selected' : ''}>Light</option>
-          </button>
+          </select>
         </div>
       </div>
     </div>

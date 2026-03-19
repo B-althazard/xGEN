@@ -3,13 +3,13 @@
  * Phase 8: PWA & Polish
  */
 
-const CACHE_NAME = 'xgen-v1';
+const CACHE_NAME = 'xgen-v2';
 
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/css/style.css',
-  '/js/app.js',
+  '/js/app.js?v=1.0.1',
   '/js/router.js',
   '/js/store.js',
   '/js/promptEngine.js',
