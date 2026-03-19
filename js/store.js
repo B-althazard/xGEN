@@ -179,16 +179,30 @@ class Store {
   }
 
   setState(partial) {
-    this._state = this._deepMerge(this._state, partial);
+    const merged = this._deepMerge(this._state, partial, 0);
+    if (merged === this._state) return;
+    this._state = merged;
     this._notify();
     this._save();
   }
 
-  _deepMerge(target, source) {
-    const result = { ...target };
+  _deepMerge(target, source, depth) {
+    if (depth > 20) return source;
+    const result = Array.isArray(source) ? [] : { ...target };
     for (const key of Object.keys(source)) {
-      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && !(source[key] instanceof Date)) {
-        result[key] = this._deepMerge(target[key] || {}, source[key]);
+      if (
+        source[key] !== null &&
+        typeof source[key] === 'object' &&
+        !Array.isArray(source[key]) &&
+        !(source[key] instanceof Date) &&
+        !(source[key] instanceof Set) &&
+        !(source[key] instanceof Map) &&
+        target[key] !== undefined &&
+        target[key] !== null &&
+        typeof target[key] === 'object' &&
+        !Array.isArray(target[key])
+      ) {
+        result[key] = this._deepMerge(target[key], source[key], depth + 1);
       } else {
         result[key] = source[key];
       }

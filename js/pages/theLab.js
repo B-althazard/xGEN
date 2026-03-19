@@ -162,4 +162,4 @@ function updateBridgeStatus() {
   if (text) text.textContent = state.app.bridgeDetected ? 'Ready to generate' : 'Bridge not detected';
 }
 
-export { renderLab, triggerGeneration };
+export { renderLab };

@@ -283,6 +283,5 @@ const app = {
 };
 
 export default app;
-export { default as app } from './app.js';
 
 document.addEventListener('DOMContentLoaded', () => app.init());

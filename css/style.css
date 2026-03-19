@@ -146,7 +146,8 @@
 
 html {
   font-size: 16px;
-  -webkit-text-size-adjust: 100%;
+  -webkit-text-size-adjust: auto;
+  text-size-adjust: auto;
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
 }
