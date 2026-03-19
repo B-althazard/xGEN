@@ -8,6 +8,7 @@ import { store } from '../store.js';
 import { triggerGeneration } from '../bridgeManager.js';
 
 let unsub;
+let labActionsBound = false;
 
 export function renderLab() {
   const state = store.getState();
@@ -85,6 +86,9 @@ function renderHistory(images) {
 }
 
 function bindLabActions() {
+  if (labActionsBound) return;
+  labActionsBound = true;
+
   document.getElementById('lab-prev')?.addEventListener('click', () => navigate(-1));
   document.getElementById('lab-next')?.addEventListener('click', () => navigate(1));
   document.getElementById('lab-download')?.addEventListener('click', downloadCurrent);
@@ -161,5 +165,3 @@ function updateBridgeStatus() {
   if (dot) dot.classList.toggle('connected', state.app.bridgeDetected);
   if (text) text.textContent = state.app.bridgeDetected ? 'Ready to generate' : 'Bridge not detected';
 }
-
-export { renderLab };

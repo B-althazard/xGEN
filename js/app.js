@@ -135,7 +135,7 @@ const app = {
 
       if (ctrl && e.key === 'g') {
         e.preventDefault();
-        import('./pages/theLab.js').then(m => m.triggerGenerate?.());
+        import('./bridgeManager.js').then(m => m.triggerGeneration?.());
         return;
       }
 

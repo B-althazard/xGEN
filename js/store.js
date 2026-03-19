@@ -323,6 +323,12 @@ class Store {
       }
 
       case 'SET_PROMPTS': {
+        if (
+          this._state.app.currentPrompt === action.payload.prompt &&
+          this._state.app.currentNegativePrompt === action.payload.negative
+        ) {
+          return;
+        }
         this.setState({ app: { ...this._state.app, currentPrompt: action.payload.prompt, currentNegativePrompt: action.payload.negative } });
         break;
       }
