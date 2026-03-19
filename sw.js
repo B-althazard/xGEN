@@ -3,33 +3,41 @@
  * Phase 8: PWA & Polish
  */
 
-const CACHE_NAME = 'xgen-v2';
+const APP_VERSION = '1.0.2';
+const CACHE_NAME = `xgen-v3-${APP_VERSION}`;
+const APP_SCOPE = new URL(self.registration.scope);
+
+function toAppUrl(path) {
+  return new URL(path, APP_SCOPE).toString();
+}
 
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/app.js?v=1.0.1',
-  '/js/router.js',
-  '/js/store.js',
-  '/js/promptEngine.js',
-  '/js/bridgeManager.js',
-  '/js/storageManager.js',
-  '/js/pages/home.js',
-  '/js/pages/creationKit.js',
-  '/js/pages/theLab.js',
-  '/js/components/formRenderer.js',
-  '/js/components/onboarding.js',
-  '/js/components/settings.js',
-  '/js/components/bridgeInstall.js',
-  '/js/modules/presets.js',
-  '/js/components/index.js',
-  '/data/master_file.json',
-  '/data/addon_file.json',
-  '/data/defaultDummies.json',
-  '/manifest.json',
-  '/assets/icons/favicon.svg',
-];
+  '',
+  'index.html',
+  'css/style.css',
+  `js/app.js?v=${APP_VERSION}`,
+  'js/router.js',
+  'js/store.js',
+  'js/promptEngine.js',
+  'js/bridgeManager.js',
+  'js/storageManager.js',
+  'js/pages/home.js',
+  'js/pages/creationKit.js',
+  'js/pages/theLab.js',
+  'js/components/formRenderer.js',
+  'js/components/onboarding.js',
+  'js/components/settings.js',
+  'js/components/bridgeInstall.js',
+  'js/modules/presets.js',
+  'js/components/index.js',
+  'data/master_file.json',
+  'data/addon_file.json',
+  'data/defaultDummies.json',
+  'manifest.json',
+  'assets/icons/favicon.svg',
+].map(toAppUrl);
+
+const OFFLINE_FALLBACK_URL = toAppUrl('index.html');
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -49,8 +57,9 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  if (!e.request.url.startsWith(self.location.origin)) return;
-  if (e.request.url.includes('venice.ai')) return;
+  const requestUrl = new URL(e.request.url);
+  if (requestUrl.origin !== APP_SCOPE.origin) return;
+  if (!requestUrl.pathname.startsWith(APP_SCOPE.pathname)) return;
 
   e.respondWith(
     caches.match(e.request).then(cached => {
@@ -65,7 +74,7 @@ self.addEventListener('fetch', (e) => {
         return response;
       }).catch(() => {
         if (e.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match(OFFLINE_FALLBACK_URL);
         }
       });
     })
