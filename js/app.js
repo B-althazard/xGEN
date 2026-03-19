@@ -184,13 +184,26 @@ const app = {
 
   bindPWAInstall() {
     let deferredPrompt = null;
+    let bannerTimer = null;
+    const banner = document.getElementById('pwa-install-banner');
+    const isDismissed = localStorage.getItem('xgen_pwa_dismissed') === 'true';
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      setTimeout(() => {
-        document.getElementById('pwa-install-banner')?.classList.add('visible');
+      if (isDismissed || isStandalone) return;
+      clearTimeout(bannerTimer);
+      bannerTimer = setTimeout(() => {
+        banner?.classList.add('visible');
       }, 60000);
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      clearTimeout(bannerTimer);
+      banner?.classList.remove('visible');
+      localStorage.setItem('xgen_pwa_dismissed', 'true');
     });
 
     document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
@@ -198,13 +211,15 @@ const app = {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        document.getElementById('pwa-install-banner')?.classList.remove('visible');
+        banner?.classList.remove('visible');
+        localStorage.setItem('xgen_pwa_dismissed', 'true');
       }
       deferredPrompt = null;
     });
 
     document.getElementById('pwa-install-dismiss')?.addEventListener('click', () => {
-      document.getElementById('pwa-install-banner')?.classList.remove('visible');
+      banner?.classList.remove('visible');
+      clearTimeout(bannerTimer);
       localStorage.setItem('xgen_pwa_dismissed', 'true');
     });
   },

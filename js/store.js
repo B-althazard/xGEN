@@ -412,11 +412,25 @@ class Store {
   }
 
   async init() {
-    // Load categories from master_file.json
     try {
-      const res = await fetch('data/master_file.json');
+      const [{ storage }, res] = await Promise.all([
+        import('./storageManager.js'),
+        fetch('data/master_file.json'),
+      ]);
       const data = await res.json();
-      this.setState({ app: { ...this._state.app, categories: data.categories || [] } });
+      const storedImages = await storage.getAll('images');
+      const images = (storedImages || [])
+        .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+        .slice(0, 10);
+
+      this.setState({
+        app: { ...this._state.app, categories: data.categories || [] },
+        lab: {
+          ...this._state.lab,
+          images,
+          activeImageIndex: images.length ? 0 : -1,
+        },
+      });
     } catch (e) {
       console.error('[Store] Failed to load categories:', e);
     }

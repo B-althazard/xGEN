@@ -4,6 +4,8 @@
  * Uses global window events to avoid circular imports with app.js
  */
 
+import { store } from './store.js';
+
 const BRIDGE_KEYS = {
   REQUEST:       'xgen_v1_request',
   REQUEST_NONCE: 'xgen_v1_request_nonce',
@@ -88,8 +90,10 @@ export function triggerGeneration() {
     return;
   }
 
-  const prompt = window.__xgenPrompt || '';
-  const negative = window.__xgenNegative || '';
+  const state = store.getState();
+  const prompt = state.app.currentPrompt || '';
+  const negative = state.app.currentNegativePrompt || '';
+  const settings = state.app.settings || {};
 
   if (!prompt.trim()) {
     dispatchAppEvent('show-toast', 'Configure some fields first');
@@ -103,7 +107,12 @@ export function triggerGeneration() {
     ts: Date.now(),
     prompt,
     negativePrompt: negative,
-    settings: { model: 'chroma', aspectRatio: '2:3' },
+    settings: {
+      model: settings.defaultModel || 'chroma',
+      aspectRatio: settings.defaultAspectRatio || '2:3',
+      promptMode: settings.promptMode || 'auto',
+      qualityTags: settings.qualityTags || 'auto',
+    },
   };
 
   dispatchAppEvent('set-status', { status: 'sent' });

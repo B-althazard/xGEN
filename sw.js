@@ -3,9 +3,10 @@
  * Phase 8: PWA & Polish
  */
 
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 const CACHE_NAME = `xgen-v3-${APP_VERSION}`;
 const APP_SCOPE = new URL(self.registration.scope);
+const EXTERNAL_CACHE_HOSTS = new Set(['fonts.googleapis.com', 'fonts.gstatic.com']);
 
 function toAppUrl(path) {
   return new URL(path, APP_SCOPE).toString();
@@ -35,6 +36,15 @@ const PRECACHE_URLS = [
   'data/defaultDummies.json',
   'manifest.json',
   'assets/icons/favicon.svg',
+  'assets/icons/icon-48.png',
+  'assets/icons/icon-72.png',
+  'assets/icons/icon-96.png',
+  'assets/icons/icon-128.png',
+  'assets/icons/icon-144.png',
+  'assets/icons/icon-192.png',
+  'assets/icons/icon-512.png',
+  'assets/icons/icon-maskable-192.png',
+  'assets/icons/icon-maskable-512.png',
 ].map(toAppUrl);
 
 const OFFLINE_FALLBACK_URL = toAppUrl('index.html');
@@ -58,24 +68,28 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const requestUrl = new URL(e.request.url);
-  if (requestUrl.origin !== APP_SCOPE.origin) return;
-  if (!requestUrl.pathname.startsWith(APP_SCOPE.pathname)) return;
+  const isAppAsset = requestUrl.origin === APP_SCOPE.origin && requestUrl.pathname.startsWith(APP_SCOPE.pathname);
+  const isExternalFont = EXTERNAL_CACHE_HOSTS.has(requestUrl.hostname);
+  if (!isAppAsset && !isExternalFont) return;
 
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
 
       return fetch(e.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') {
+        if (!response) {
           return response;
         }
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        if (response.status === 200 || response.type === 'opaque') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
         return response;
       }).catch(() => {
         if (e.request.mode === 'navigate') {
           return caches.match(OFFLINE_FALLBACK_URL);
         }
+        return cached;
       });
     })
   );
