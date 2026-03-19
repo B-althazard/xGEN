@@ -9,7 +9,6 @@ import { initOnboarding } from './components/onboarding.js';
 
 const app = {
   async init() {
-    const savedState = store.getState();
     const isFirstVisit = !localStorage.getItem('xgen_onboarding_done');
 
     if (isFirstVisit) {
@@ -18,6 +17,8 @@ const app = {
     }
 
     await store.init();
+    const savedState = store.getState();
+    document.documentElement.setAttribute('data-theme', savedState.app?.settings?.theme || 'dark');
     this.bindAppEvents();
     this.bindNavigation();
     this.bindFAB();

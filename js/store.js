@@ -23,6 +23,7 @@ function defaultFields() {
     legs: null,
     pussy_style: null,
     pussy_state: null,
+    futa_enabled: 'off',
     futa_size: null,
     futa_shape: null,
     futa_cut: null,
@@ -94,6 +95,20 @@ function createDummy(index = 0) {
     fields: defaultFields(),
     lockedFields: [],
     referencePhotoId: null,
+  };
+}
+
+function normalizeDummy(dummy, index = 0) {
+  const base = createDummy(index);
+  return {
+    ...base,
+    ...dummy,
+    fields: {
+      ...defaultFields(),
+      ...(dummy?.fields || {}),
+      futa_enabled: dummy?.fields?.futa_enabled || 'off',
+    },
+    lockedFields: Array.isArray(dummy?.lockedFields) ? dummy.lockedFields : [],
   };
 }
 
@@ -221,6 +236,21 @@ class Store {
         const idx = this._state.app.activeDummyIndex;
         const dummies = [...this._state.dummies];
         dummies[idx] = { ...dummies[idx], fields: { ...dummies[idx].fields, [fieldId]: value } };
+
+        if (fieldId === 'futa_enabled' && value !== 'on') {
+          dummies[idx].fields = {
+            ...dummies[idx].fields,
+            futa_enabled: value || 'off',
+            futa_size: null,
+            futa_shape: null,
+            futa_cut: null,
+            futa_state: null,
+            futa_cum: null,
+            futa_balls: null,
+            futa_pussy: null,
+          };
+        }
+
         this.setState({ dummies });
         break;
       }
@@ -273,7 +303,7 @@ class Store {
 
       case 'LOAD_DUMMY': {
         const { dummy, multi } = action.payload;
-        const dummies = [dummy];
+        const dummies = [normalizeDummy(dummy, 0)];
         this.setState({
           dummies,
           multiDummyInteraction: multi || this._state.multiDummyInteraction,
@@ -292,6 +322,11 @@ class Store {
         for (const cat of categories) {
           for (const field of cat.fields) {
             if (locked.includes(field.id)) continue;
+
+            if (field.id.startsWith('futa_') && field.id !== 'futa_enabled' && newFields.futa_enabled !== 'on') {
+              newFields[field.id] = null;
+              continue;
+            }
 
             if (field.type === 'multi-select' || field.type === 'color-swatch') {
               const count = field.multiSelect ? Math.floor(Math.random() * 4) : (Math.random() < 0.5 ? 1 : 0);
@@ -423,7 +458,10 @@ class Store {
         .sort((a, b) => (b.ts || 0) - (a.ts || 0))
         .slice(0, 10);
 
+      const normalizedDummies = (this._state.dummies || []).map((dummy, index) => normalizeDummy(dummy, index));
+
       this.setState({
+        dummies: normalizedDummies,
         app: { ...this._state.app, categories: data.categories || [] },
         lab: {
           ...this._state.lab,
@@ -438,4 +476,4 @@ class Store {
 }
 
 export const store = new Store();
-export { createDummy, defaultFields };
+export { createDummy, defaultFields, normalizeDummy };

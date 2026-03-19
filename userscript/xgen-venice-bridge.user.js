@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         x.GEN → Venice Bridge
 // @namespace    https://b-althazard.github.io/
-// @version      2.0.0
+// @version      2.0.1
 // @description  Bridges x.GEN to Venice.ai for automated image generation
 // @match        https://b-althazard.github.io/xgen/*
+// @match        https://b-althazard.github.io/xGEN/*
 // @match        https://venice.ai/chat*
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -14,7 +15,7 @@
 (function () {
   'use strict';
 
-  const XGEN_URL_PREFIX = 'https://b-althazard.github.io/xgen/';
+  const XGEN_URL_RE = /^https:\/\/b-althazard\.github\.io\/xgen\//i;
   const VENICE_HOST = 'venice.ai';
 
   const KEYS = {
@@ -35,9 +36,7 @@
 
   const SELECTORS = {
     xgenGenerate: '#lab-generate-btn',
-    xgenPrompt: '#positive-prompt-display',
-    xgenImagePlaceholder: '.image-viewer-placeholder',
-    xgenImageMain: '.image-viewer-main',
+    xgenPrompt: '#prompter-positive',
 
     veniceTextarea: 'textarea[name="prompt-textarea"]',
     veniceSubmit: 'button[type="submit"][aria-label="Submit chat"]',
@@ -88,7 +87,7 @@
   };
 
   function isXgen() {
-    return window.location.href.startsWith(XGEN_URL_PREFIX);
+    return XGEN_URL_RE.test(window.location.href);
   }
 
   function isVenice() {
@@ -150,6 +149,10 @@
 
   function ownHeartbeatKey() {
     return isXgen() ? KEYS.HEARTBEAT_XGEN : KEYS.HEARTBEAT_VENICE;
+  }
+
+  function dispatchPageEvent(name, detail = {}) {
+    window.dispatchEvent(new CustomEvent(name, { detail }));
   }
 
   function computeSignal(localStatus = bridgeState.status) {
@@ -374,11 +377,23 @@
       ts: Date.now(),
       href: location.href
     });
+
+    if (isXgen()) {
+      dispatchPageEvent('xgen:status-update', {
+        role: bridgeState.role,
+        status,
+        detail,
+        connected: computeSignal(status) !== 'red'
+      });
+    }
   }
 
   function startHeartbeat() {
     const write = () => {
       GM_setValue(ownHeartbeatKey(), Date.now());
+      if (isXgen()) {
+        dispatchPageEvent('xgen:bridge-ready', { source: 'userscript-heartbeat' });
+      }
       updatePill();
     };
     write();
@@ -458,65 +473,25 @@
     }
   }
 
-  function injectXgenImage(dataUrl, nonce) {
-    const placeholder = document.querySelector(SELECTORS.xgenImagePlaceholder);
-    const main = document.querySelector(SELECTORS.xgenImageMain);
-
-    if (!main && !placeholder) {
-      setStatus('image inject failed', 'image target not found');
-      log('xgen_image_target_missing', { nonce });
-      return false;
-    }
-
-    let img = (main || placeholder.parentElement || document).querySelector('img[data-rvpb-image="1"]');
-    if (!img) {
-      img = document.createElement('img');
-      img.setAttribute('data-rvpb-image', '1');
-      img.alt = 'Venice render';
-      img.decoding = 'async';
-      img.loading = 'eager';
-      img.style.maxWidth = '100%';
-      img.style.maxHeight = '60vh';
-      img.style.objectFit = 'contain';
-      img.style.display = 'block';
-      img.style.margin = '0 auto';
-    }
-
-    img.src = dataUrl;
-
-    if (placeholder) {
-      placeholder.replaceWith(img);
-    } else if (main && !main.contains(img)) {
-      main.innerHTML = '';
-      main.appendChild(img);
-    }
-
-    log('xgen_image_injected', { nonce, length: dataUrl.length });
-    setStatus('image injected');
-    GM_setValue(KEYS.LAST_TRANSFER_TS, Date.now());
-    updatePill();
-    return true;
-  }
-
-  async function captureXgenPrompt() {
-    const promptEl = document.querySelector(SELECTORS.xgenPrompt);
-    if (!promptEl) {
-      setStatus('error: prompt not found');
-      log('xgen_prompt_missing');
-      return;
-    }
-
-    const prompt = (promptEl.textContent || '').trim();
+  async function captureXgenPrompt(payload = null) {
+    const prompt = payload?.prompt || (document.querySelector(SELECTORS.xgenPrompt)?.textContent || '').trim();
     if (!prompt) {
       setStatus('error: prompt empty');
       log('xgen_prompt_empty');
+      dispatchPageEvent('xgen:generation-error', { message: 'Prompt is empty.' });
       return;
     }
 
-    const nonce = makeNonce();
+    const nonce = payload?.nonce || makeNonce();
     bridgeState.lastPrompt = prompt;
 
-    GM_setValue(KEYS.REQUEST, { prompt, nonce, ts: Date.now() });
+    GM_setValue(KEYS.REQUEST, {
+      prompt,
+      negativePrompt: payload?.negativePrompt || '',
+      settings: payload?.settings || null,
+      nonce,
+      ts: Date.now()
+    });
     GM_setValue(KEYS.TIMESTAMP, Date.now());
     GM_setValue(KEYS.REQUEST_NONCE, nonce);
 
@@ -529,29 +504,38 @@
     ensurePill();
     ensurePanel();
     setStatus('standby', 'Waiting for Generate click');
+    dispatchPageEvent('xgen:bridge-ready', { source: 'userscript' });
     log('init', { href: location.href, verifiedSelectors: VERIFIED_SELECTORS });
     startHeartbeat();
     setTimeout(() => verifyVeniceSelectors(), 700);
 
-    document.addEventListener('click', (event) => {
-      const generateBtn = event.target.closest(SELECTORS.xgenGenerate);
-      if (!generateBtn) return;
-
-      log('generate_clicked');
+    window.addEventListener('xgen:generate', (event) => {
+      log('generate_clicked', { nonce: event.detail?.nonce || null });
       setStatus('standby', 'Generate clicked');
 
       setTimeout(() => {
-        captureXgenPrompt().catch(err => {
+        captureXgenPrompt(event.detail || null).catch(err => {
           setStatus('error: x.GEN handler failed', String(err));
           log('xgen_handler_error', { message: String(err) });
+          dispatchPageEvent('xgen:generation-error', { message: String(err) });
         });
       }, CONFIG.clickDelayMs);
-    }, true);
+    });
 
     GM_addValueChangeListener(KEYS.STATUS, (_key, _oldValue, value, remote) => {
       if (!remote || !value || value.role === bridgeState.role) return;
       log('remote_status', value, true);
       updatePill();
+      dispatchPageEvent('xgen:status-update', {
+        ...value,
+        connected: computeSignal(value.status) !== 'red'
+      });
+
+      if (/error|timeout|failed/i.test(value.status || '')) {
+        dispatchPageEvent('xgen:generation-error', {
+          message: value.detail || value.status || 'Venice generation failed.'
+        });
+      }
     });
 
     GM_addValueChangeListener(KEYS.LOG_NONCE, (_key, _oldValue, _value, remote) => {
@@ -577,11 +561,13 @@
       if (!remote || !newValue || newValue === oldValue) return;
       const result = GM_getValue(KEYS.RESULT, null);
       if (!result || !result.dataUrl) {
-        setStatus('image inject failed', 'image payload missing');
+        setStatus('image transfer failed', 'image payload missing');
         log('xgen_image_payload_missing', { nonce: newValue });
+        dispatchPageEvent('xgen:generation-error', { message: 'Image payload missing.' });
         return;
       }
-      injectXgenImage(result.dataUrl, newValue);
+      setStatus('image transferred');
+      dispatchPageEvent('xgen:image-received', result);
     });
   }
 
@@ -630,6 +616,8 @@
   }
 
   async function processIncomingPrompt(prompt, nonce, force = false) {
+    const request = GM_getValue(KEYS.REQUEST, null);
+
     if (!prompt || !prompt.trim()) {
       setStatus('error: received empty prompt');
       log('received_empty_prompt');
@@ -661,12 +649,20 @@
     if (nonce) {
       bridgeState.lastProcessedNonceLocal = nonce;
       GM_setValue(KEYS.LAST_PROCESSED_NONCE, nonce);
-      GM_setValue(KEYS.RESULT, { dataUrl, nonce, ts: Date.now() });
-      GM_setValue(KEYS.RESULT_NONCE, nonce);
-    } else {
-      GM_setValue(KEYS.RESULT, { dataUrl, ts: Date.now() });
-      GM_setValue(KEYS.RESULT_NONCE, makeNonce());
-    }
+       GM_setValue(KEYS.RESULT, {
+         dataUrl,
+         nonce,
+         ts: Date.now(),
+         prompt,
+         negativePrompt: request?.negativePrompt || '',
+         model: request?.settings?.model || null,
+         settings: request?.settings || null
+       });
+       GM_setValue(KEYS.RESULT_NONCE, nonce);
+     } else {
+       GM_setValue(KEYS.RESULT, { dataUrl, ts: Date.now(), prompt });
+       GM_setValue(KEYS.RESULT_NONCE, makeNonce());
+     }
     GM_setValue(KEYS.LAST_TRANSFER_TS, Date.now());
     setStatus('image transferred');
     log('venice_image_sent', { nonce, length: dataUrl.length });

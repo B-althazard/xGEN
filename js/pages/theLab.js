@@ -46,6 +46,8 @@ export function renderLab() {
       renderCurrentImage(images[activeIdx], activeIdx, images.length);
       renderHistory(images);
     }
+
+    updateBridgeStatus();
   });
 }
 
@@ -97,6 +99,7 @@ function bindLabActions() {
   document.getElementById('lab-copy-prompt-btn')?.addEventListener('click', copyPrompt);
   document.getElementById('lab-fullscreen')?.addEventListener('click', openFullscreen);
   document.getElementById('lab-generate-btn')?.addEventListener('click', () => triggerGeneration?.());
+  document.getElementById('lab-generate-empty')?.addEventListener('click', () => triggerGeneration?.());
   document.getElementById('lab-viewer')?.addEventListener('click', (e) => {
     if (e.target.id === 'lab-viewer' || e.target.id === 'lab-image') openFullscreen();
   });
@@ -161,7 +164,16 @@ function updateBridgeStatus() {
   const state = store.getState();
   const dot = document.getElementById('lab-bridge-dot');
   const text = document.getElementById('lab-status-text');
+  const status = state.lab.currentJobStatus;
+
+  const statusText = {
+    idle: state.app.bridgeDetected ? 'Ready to generate' : 'Bridge not detected',
+    sent: 'Prompt sent to Venice',
+    generating: 'Venice is generating',
+    done: 'Image received',
+    failed: state.lab.errorMessage || 'Generation failed',
+  };
 
   if (dot) dot.classList.toggle('connected', state.app.bridgeDetected);
-  if (text) text.textContent = state.app.bridgeDetected ? 'Ready to generate' : 'Bridge not detected';
+  if (text) text.textContent = statusText[status] || statusText.idle;
 }

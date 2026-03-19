@@ -804,8 +804,8 @@ ul, ol {
 
 /* Module Prompter */
 #module-prompter {
-  position: sticky;
-  top: var(--topbar-height);
+  position: relative;
+  top: 0;
   z-index: var(--z-sticky);
   background: var(--bg-base);
   border-bottom: 1px solid var(--border-subtle);
@@ -932,6 +932,9 @@ ul, ol {
   padding: var(--space-2) var(--space-4);
   background: var(--bg-base);
   border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: var(--topbar-height);
+  z-index: calc(var(--z-sticky) - 1);
   scrollbar-width: none;
   -ms-overflow-style: none;
   scroll-snap-type: x mandatory;
@@ -971,6 +974,7 @@ ul, ol {
 #category-window {
   padding: var(--space-3) var(--space-4) var(--space-8);
   min-height: 60vh;
+  scroll-margin-top: calc(var(--topbar-height) + 48px);
 }
 
 /* Accordion */

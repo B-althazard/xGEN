@@ -27,8 +27,18 @@ export function renderCategoryWindow(container, categories, activeIdx, fields) {
 
   const activeDummy = store.getState().dummies[store.getState().app.activeDummyIndex];
   const lockedFields = activeDummy?.lockedFields || [];
+  const futaEnabled = fields.futa_enabled === 'on';
+
+  if (category.id === 'futa' && !futaEnabled) {
+    const hint = document.createElement('div');
+    hint.className = 'field-row';
+    hint.innerHTML = '<div class="prompter-text prompter-negative">Futa is currently off. Turn it on to configure cock and balls details.</div>';
+    container.appendChild(hint);
+  }
 
   category.fields.forEach(field => {
+    if (category.id === 'futa' && field.id !== 'futa_enabled' && !futaEnabled) return;
+
     const value = fields[field.id];
     const isLocked = lockedFields.includes(field.id);
 
@@ -59,13 +69,6 @@ function createFieldElement(field, value, isLocked) {
   lockBtn.addEventListener('click', () => {
     store.dispatch({ type: 'TOGGLE_LOCK_FIELD', payload: { fieldId: field.id } });
     store.pushUndo('toggle_lock', null);
-    const dummy = store.getState().dummies[store.getState().app.activeDummyIndex];
-    renderCategoryWindow(
-      document.getElementById('category-window'),
-      store.getState().app.categories,
-      store.getState().app.activeCategoryIndex ?? 0,
-      dummy?.fields || {}
-    );
   });
 
   labelRight.appendChild(lockBtn);
@@ -113,10 +116,6 @@ function createSingleSelect(field, value, isLocked) {
       store.pushUndo('field_change', null);
       const newVal = value === opt.id ? null : opt.id;
       store.dispatch({ type: 'SET_FIELD', payload: { fieldId: field.id, value: newVal } });
-      btn.classList.toggle('selected', newVal !== null);
-      btn.parentElement.querySelectorAll('.ss-btn').forEach(b => b.setAttribute('aria-checked', 'false'));
-      btn.setAttribute('aria-checked', String(newVal !== null));
-      import('../pages/creationKit.js').then(m => m.updatePrompter?.());
     });
     group.appendChild(btn);
   });
@@ -151,14 +150,14 @@ function createMultiSelect(field, value, isLocked) {
     btn.addEventListener('click', () => {
       if (isLocked) return;
       store.pushUndo('field_change', null);
-      const newSelected = isSelected
-        ? selected.filter(v => v !== opt.id)
-        : [...selected, opt.id];
+      const currentSelected = Array.isArray(store.getState().dummies[store.getState().app.activeDummyIndex]?.fields[field.id])
+        ? store.getState().dummies[store.getState().app.activeDummyIndex].fields[field.id]
+        : [];
+      const currentlySelected = currentSelected.includes(opt.id);
+      const newSelected = currentlySelected
+        ? currentSelected.filter(v => v !== opt.id)
+        : [...currentSelected, opt.id];
       store.dispatch({ type: 'SET_FIELD', payload: { fieldId: field.id, value: newSelected } });
-      btn.classList.toggle('selected', !isSelected);
-      checkbox.textContent = !isSelected ? '✓' : '';
-      btn.setAttribute('aria-checked', String(!isSelected));
-      import('../pages/creationKit.js').then(m => m.updatePrompter?.());
     });
 
     grid.appendChild(btn);
@@ -189,24 +188,17 @@ function createColorSwatch(field, value, isLocked) {
     swatch.addEventListener('click', () => {
       if (isLocked) return;
       store.pushUndo('field_change', null);
+      const currentValue = store.getState().dummies[store.getState().app.activeDummyIndex]?.fields[field.id];
+      const currentSelected = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : []);
       let newVal;
       if (multi) {
-        newVal = selected.includes(color.id)
-          ? selected.filter(v => v !== color.id)
-          : [...selected, color.id];
+        newVal = currentSelected.includes(color.id)
+          ? currentSelected.filter(v => v !== color.id)
+          : [...currentSelected, color.id];
       } else {
-        newVal = selected.includes(color.id) ? null : color.id;
+        newVal = currentSelected.includes(color.id) ? null : color.id;
       }
       store.dispatch({ type: 'SET_FIELD', payload: { fieldId: field.id, value: newVal } });
-      swatch.classList.toggle('selected', multi ? newVal.includes(color.id) : newVal === color.id);
-      if (multi) {
-        wrapper.querySelectorAll('.swatch').forEach(s => {
-          const id = s.getAttribute('aria-label');
-          const c = field.colors.find(cl => cl.label === id);
-          s.classList.toggle('selected', newVal.includes(c?.id));
-        });
-      }
-      import('../pages/creationKit.js').then(m => m.updatePrompter?.());
     });
 
     wrapper.appendChild(swatch);
@@ -228,9 +220,6 @@ function createShapeModal(field, value, isLocked) {
     openShapeModal(field, value, (selected) => {
       store.pushUndo('field_change', null);
       store.dispatch({ type: 'SET_FIELD', payload: { fieldId: field.id, value: selected } });
-      trigger.textContent = selected ? (field.options.find(o => o.id === selected)?.label || 'Select') : 'Select';
-      trigger.classList.toggle('selected', !!selected);
-      import('../pages/creationKit.js').then(m => m.updatePrompter?.());
     });
   });
 

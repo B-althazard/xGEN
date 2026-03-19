@@ -6,15 +6,6 @@
 
 import { store } from './store.js';
 
-const BRIDGE_KEYS = {
-  REQUEST:       'xgen_v1_request',
-  REQUEST_NONCE: 'xgen_v1_request_nonce',
-  RESULT:        'xgen_v1_result',
-  RESULT_NONCE:  'xgen_v1_result_nonce',
-  STATUS:        'xgen_v1_status',
-  ERROR:         'xgen_v1_error',
-};
-
 let bridgeDetected = false;
 let currentJobNonce = null;
 let jobTimeoutId = null;
@@ -24,11 +15,26 @@ export function initBridge() {
   bridgeDetected = false;
 
   window.addEventListener('xgen:bridge-ready', () => {
+    if (bridgeDetected) return;
     bridgeDetected = true;
+    store.dispatch({ type: 'SET_BRIDGE_DETECTED', payload: true });
     dispatchAppEvent('bridge-connected');
   });
 
   window.addEventListener('xgen:status-update', (e) => {
+    if (e.detail?.connected === true && !bridgeDetected) {
+      bridgeDetected = true;
+      store.dispatch({ type: 'SET_BRIDGE_DETECTED', payload: true });
+      dispatchAppEvent('bridge-connected');
+    }
+
+    if (e.detail?.role?.toLowerCase().includes('venice')) {
+      const statusText = String(e.detail.status || '');
+      if (/waiting|filling|submitting|submitted|extracting/i.test(statusText)) {
+        dispatchAppEvent('set-status', { status: 'generating' });
+      }
+    }
+
     dispatchAppEvent('bridge-status', e.detail);
   });
 
@@ -36,6 +42,7 @@ export function initBridge() {
     clearTimeout(jobTimeoutId);
     const payload = e.detail;
     if (payload.nonce !== currentJobNonce) return;
+    currentJobNonce = null;
 
     dispatchAppEvent('hide-loading');
     dispatchAppEvent('clear-error');
@@ -63,15 +70,10 @@ export function initBridge() {
 
   window.addEventListener('xgen:generation-error', (e) => {
     clearTimeout(jobTimeoutId);
+    currentJobNonce = null;
     dispatchAppEvent('hide-loading');
     dispatchAppEvent('show-error', `Generation failed: ${e.detail.message}`);
     dispatchAppEvent('set-status', { status: 'failed', error: e.detail.message });
-  });
-
-  window.addEventListener('xgen:generate', (e) => {
-    const payload = e.detail;
-    GM_setValue(BRIDGE_KEYS.REQUEST, payload);
-    GM_setValue(BRIDGE_KEYS.REQUEST_NONCE, `${payload.nonce}_${Date.now()}`);
   });
 }
 
@@ -120,6 +122,7 @@ export function triggerGeneration() {
   dispatchAppEvent('show-loading', { timeout: JOB_TIMEOUT_MS });
 
   jobTimeoutId = setTimeout(() => {
+    currentJobNonce = null;
     dispatchAppEvent('hide-loading');
     dispatchAppEvent('show-error', 'Generation timed out after 120 seconds. Check Venice.ai is open.');
     dispatchAppEvent('set-status', { status: 'failed', error: 'timeout' });

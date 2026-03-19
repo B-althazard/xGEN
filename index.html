@@ -16,7 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
 
   <!-- PWA Manifest -->
-  <link rel="manifest" href="./manifest.json?v=1.0.3">
+  <link rel="manifest" href="./manifest.json?v=1.0.4">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -143,6 +143,7 @@
           <div class="empty-state-icon">🧪</div>
           <div class="empty-state-title">The Lab</div>
           <div class="empty-state-desc">Generate your first image. Configure a dummy and press Generate.</div>
+          <button class="btn btn-primary btn-lg" id="lab-generate-empty">Generate</button>
           <button class="btn btn-primary btn-lg" id="lab-goto-kit">Open Creation Kit</button>
         </div>
 
@@ -324,13 +325,13 @@
   </div><!-- #app -->
 
   <!-- App Scripts (deferred) -->
-  <script type="module" src="./js/app.js?v=1.0.3"></script>
+  <script type="module" src="./js/app.js?v=1.0.4"></script>
 
   <!-- Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=1.0.3', { scope: './' }).catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=1.0.4', { scope: './' }).catch(() => {});
       });
     }
   </script>

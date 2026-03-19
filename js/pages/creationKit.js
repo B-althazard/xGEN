@@ -1,61 +1,76 @@
 /**
  * x.GEN — Creation Kit Page
  * Phase 3: Form & Prompt Engine
- * (Stub for Phase 1 — full implementation in Phase 3)
  */
 
 import { store } from '../store.js';
-import { renderCategoryNav } from '../components/formRenderer.js';
-import { renderCategoryWindow } from '../components/formRenderer.js';
+import { renderCategoryNav, renderCategoryWindow } from '../components/formRenderer.js';
 import { assemblePrompt } from '../promptEngine.js';
 
 let unsub;
+let lastRenderSignature = '';
 
 export function renderCreationKit() {
   const container = document.getElementById('category-navbar');
-  const windowEl   = document.getElementById('category-window');
+  const windowEl = document.getElementById('category-window');
   if (!container || !windowEl) return;
 
-  const state = store.getState();
-  const categories = state.app.categories;
-
-  if (!categories.length) {
-    windowEl.innerHTML = '<div class="empty-state"><div class="empty-state-title">Loading categories...</div></div>';
-    return;
-  }
-
-  const activeIdx = state.app.activeCategoryIndex ?? 0;
-
-  renderCategoryNav(container, categories, activeIdx, (idx) => {
-    store.dispatch({ type: 'SET_ACTIVE_CATEGORY', payload: idx });
-    renderCategoryWindow(windowEl, categories, idx, state.dummies[state.app.activeDummyIndex]?.fields || {});
-    renderDummyTabs();
-  });
-
-  renderCategoryWindow(windowEl, categories, activeIdx, state.dummies[state.app.activeDummyIndex]?.fields || {});
-  renderDummyTabs();
-  updatePrompter();
-  updateTabsVisibility();
+  renderFromState();
 
   unsub?.();
-  unsub = store.subscribe(() => {
-    const s = store.getState();
-    updatePrompter(s);
-    updateTabsVisibility(s);
+  unsub = store.subscribe((state) => {
+    const signature = getRenderSignature(state);
+    if (signature === lastRenderSignature) return;
+    renderFromState(state);
   });
 }
 
-function renderDummyTabs() {
-  const tabsEl   = document.getElementById('dummy-tabs');
-  const tabDummy0 = document.getElementById('tab-dummy-0');
-  const btnAdd    = document.getElementById('btn-add-dummy');
+function renderFromState(state = store.getState()) {
+  const container = document.getElementById('category-navbar');
+  const windowEl = document.getElementById('category-window');
+  if (!container || !windowEl) return;
+
+  const categories = state.app.categories || [];
+  if (!categories.length) {
+    windowEl.innerHTML = '<div class="empty-state"><div class="empty-state-title">Loading categories...</div></div>';
+    lastRenderSignature = getRenderSignature(state);
+    return;
+  }
+
+  const activeIdx = Math.min(state.app.activeCategoryIndex ?? 0, categories.length - 1);
+  const activeDummy = state.dummies[state.app.activeDummyIndex];
+  const fields = activeDummy?.fields || {};
+
+  renderCategoryNav(container, categories, activeIdx, (idx) => {
+    store.dispatch({ type: 'SET_ACTIVE_CATEGORY', payload: idx });
+  });
+  renderCategoryWindow(windowEl, categories, activeIdx, fields);
+  renderDummyTabs(state);
+  updateTabsVisibility(state);
+  updatePrompter(state);
+
+  lastRenderSignature = getRenderSignature(store.getState());
+}
+
+function getRenderSignature(state = store.getState()) {
+  return JSON.stringify({
+    categories: state.app.categories,
+    activeCategoryIndex: state.app.activeCategoryIndex,
+    activeDummyIndex: state.app.activeDummyIndex,
+    dummies: state.dummies,
+    settings: {
+      defaultModel: state.app.settings?.defaultModel,
+      promptMode: state.app.settings?.promptMode,
+    },
+  });
+}
+
+function renderDummyTabs(state = store.getState()) {
+  const tabsEl = document.getElementById('dummy-tabs');
   if (!tabsEl) return;
 
-  const state = store.getState();
-  const dummies = state.dummies;
-
+  const dummies = state.dummies || [];
   tabsEl.innerHTML = '';
-  tabsEl.style.display = 'flex';
 
   dummies.forEach((dummy, i) => {
     const tab = document.createElement('button');
@@ -65,13 +80,6 @@ function renderDummyTabs() {
     tab.textContent = dummy.name || `Dummy ${i + 1}`;
     tab.addEventListener('click', () => {
       store.dispatch({ type: 'SET_ACTIVE_DUMMY', payload: i });
-      renderDummyTabs();
-      renderCategoryWindow(
-        document.getElementById('category-window'),
-        state.app.categories,
-        state.app.activeCategoryIndex ?? 0,
-        dummies[i].fields
-      );
     });
     tabsEl.appendChild(tab);
   });
@@ -88,41 +96,48 @@ function renderDummyTabs() {
   }
 }
 
-function updateTabsVisibility(state) {
-  const s = state || store.getState();
+function updateTabsVisibility(state = store.getState()) {
   const tabsEl = document.getElementById('dummy-tabs');
   if (tabsEl) {
-    tabsEl.style.display = s.dummies.length > 1 ? 'flex' : 'none';
+    tabsEl.style.display = state.dummies.length > 1 ? 'flex' : 'none';
   }
 }
 
-function updatePrompter(state) {
-  const s = state || store.getState();
-  const fields = s.dummies[s.app.activeDummyIndex]?.fields || {};
-  const categories = s.app.categories || [];
+function updatePrompter(state = store.getState()) {
+  const fields = state.dummies[state.app.activeDummyIndex]?.fields || {};
+  const categories = state.app.categories || [];
+  const { positive, negative, wordCount } = assemblePrompt(fields, categories, state.app.settings || {});
 
-  const { positive, negative, wordCount } = assemblePrompt(fields, categories, s.app.settings);
-
-  store.dispatch({ type: 'SET_PROMPTS', payload: { prompt: positive, negative } });
-
-  const posEl  = document.getElementById('prompter-positive');
-  const negEl  = document.getElementById('prompter-negative');
+  const posEl = document.getElementById('prompter-positive');
+  const negEl = document.getElementById('prompter-negative');
   const metaEl = document.getElementById('prompter-meta');
   const labelEl = document.getElementById('prompter-label');
   const barFill = document.getElementById('prompter-bar-fill');
 
-  if (posEl)  posEl.textContent  = positive || '—';
-  if (negEl)  negEl.textContent  = negative  || '—';
+  if (posEl) posEl.textContent = positive || '—';
+  if (negEl) negEl.textContent = negative || '—';
   if (metaEl) metaEl.textContent = `${wordCount} words`;
 
-  const allFields = categories.flatMap(c => c.fields).length;
-  const activeFields = categories.flatMap(c => c.fields).filter(f => {
-    const v = fields[f.id];
-    return v !== null && v !== undefined && (Array.isArray(v) ? v.length > 0 : true);
+  const visibleFields = categories.flatMap((category) => {
+    if (category.id !== 'futa') return category.fields;
+    return category.fields.filter((field) => field.id === 'futa_enabled' || fields.futa_enabled === 'on');
+  });
+
+  const activeFields = visibleFields.filter((field) => {
+    const value = fields[field.id];
+    return value !== null && value !== undefined && (Array.isArray(value) ? value.length > 0 : value !== 'off');
   }).length;
 
-  if (labelEl) labelEl.textContent = `${activeFields} / ${allFields} fields`;
-  if (barFill) barFill.style.width = allFields > 0 ? `${(activeFields / allFields) * 100}%` : '0%';
+  if (labelEl) labelEl.textContent = `${activeFields} / ${visibleFields.length} fields`;
+  if (barFill) barFill.style.width = visibleFields.length ? `${(activeFields / visibleFields.length) * 100}%` : '0%';
+
+  const currentState = store.getState();
+  if (
+    currentState.app.currentPrompt !== positive ||
+    currentState.app.currentNegativePrompt !== negative
+  ) {
+    store.dispatch({ type: 'SET_PROMPTS', payload: { prompt: positive, negative } });
+  }
 }
 
-export { updatePrompter };
+export { renderFromState, updatePrompter };

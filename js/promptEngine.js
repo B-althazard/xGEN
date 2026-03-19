@@ -95,6 +95,7 @@ export function assemblePrompt(fields, categories, settings = {}) {
 
   const parts = [];
   const negParts = [];
+  const futaEnabled = fields.futa_enabled === 'on';
 
   if (model.qualityPrefix.length) {
     parts.push(model.qualityPrefix.join(', '));
@@ -127,6 +128,10 @@ export function assemblePrompt(fields, categories, settings = {}) {
   const usedParts = new Set();
 
   for (const fieldId of order) {
+    if (fieldId.startsWith('futa_') && fieldId !== 'futa_enabled' && !futaEnabled) {
+      continue;
+    }
+
     const field = findField(categories, fieldId);
     if (!field) continue;
 

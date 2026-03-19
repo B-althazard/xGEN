@@ -3,7 +3,7 @@
  * Phase 8: PWA & Polish
  */
 
-const APP_VERSION = '1.0.3';
+const APP_VERSION = '1.0.4';
 const CACHE_NAME = `xgen-v3-${APP_VERSION}`;
 const APP_SCOPE = new URL(self.registration.scope);
 const EXTERNAL_CACHE_HOSTS = new Set(['fonts.googleapis.com', 'fonts.gstatic.com']);
